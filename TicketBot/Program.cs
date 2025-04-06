@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using TicketBot.Dto;
+using TicketBot.Interfaces;
 using TicketBot.Service;
 
 
@@ -14,9 +15,7 @@ var configurationBuilder = new ConfigurationBuilder()
 var configuration = configurationBuilder.Build();
 builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.Configure<CredentialsConfig>(builder.Configuration.GetSection("Credentials"));
-builder.Services.AddScoped<CreateRequestService>();
-builder.Services.AddScoped<EmailSenderService>();
-builder.Services.AddHttpClient<CreateRequestService>(client =>
+builder.Services.AddHttpClient<IHttpClientWrapper, HttpClientWrapper>(client =>
 {
 
     var credentials = configuration.GetSection("Credentials").Get<CredentialsConfig>();
@@ -26,28 +25,41 @@ builder.Services.AddHttpClient<CreateRequestService>(client =>
     client.DefaultRequestHeaders.Add("Cookie",credentials.Cookie);
     client.DefaultRequestHeaders.Add("Referer",credentials.Referer);
 
-});
 
+});
+builder.Services.AddScoped<IAvailableDate, AvailableDate>();
+builder.Services.AddScoped<IBookingSlot,BookingSlot>();
+builder.Services.AddScoped<ICatchSlot,CatchSlot>();
+builder.Services.AddScoped<IFreeTime,FreeTime>();
+builder.Services.AddScoped<EmailSenderService>();
 var app = builder.Build();
-using (var scoped = app.Services.CreateScope())
+using (var scope = app.Services.CreateScope())
 {
-    var requestservice = scoped.ServiceProvider.GetRequiredService<CreateRequestService>();
-    var requestAsync = await requestservice.SendRequestAsync();
-    var freeSlot = await requestservice.SenderAsync(requestAsync);
-    var time = await requestservice.FreeTime(freeSlot.Office[0].srvCenterId,freeSlot.time);
-    await requestservice.CheckTime(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId);
-    await requestservice.BookTime(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId, freeSlot.Office[0]);
-    await requestservice.CredentialBook(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId,freeSlot.Office[0]);
-    await requestservice.Confirm(freeSlot.Office[0].srvCenterId);
-    // var parsingService = scoped.ServiceProvider.GetRequiredService<ParsingService>();
-    // var emailSender = scoped.ServiceProvider.GetRequiredService<EmailSenderService>();
-    // var freeTimes = await requestservice.SenderAsync();
-    // string htmlContent = await requestservice.GetStep3(freeTimes.Rows[0].Id);
-    // string csrfToken = parsingService.ExtractCsrfToken(htmlContent);
-    // string valueParam = parsingService.ExtractValueParam(htmlContent);
-    // Console.WriteLine($"CSRF Token: {csrfToken}");
-    // Console.WriteLine($"Value Param: {valueParam}");
-    // string content = await requestservice.GetTicket(csrfToken, valueParam);
-    // await emailSender.SenderEmailAsync(configuration.GetSection("Credentials:Gmail").Get<string>(),$"Талон взято на {freeTimes.Rows[0].Time.ToString()}");
+    var availableDateService = scope.ServiceProvider.GetRequiredService<IAvailableDate>();
+    var bookingSlotService = scope.ServiceProvider.GetRequiredService<IBookingSlot>();
+    var catchSlotService = scope.ServiceProvider.GetRequiredService<ICatchSlot>();
+    var freeTimeService = scope.ServiceProvider.GetRequiredService<IFreeTime>();
+    var emailSenderService = scope.ServiceProvider.GetRequiredService<EmailSenderService>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+
+    var availableDate = await availableDateService.GetAvailableDatesAsync();
+    var catchSlot = await catchSlotService.GetCatchSlot(availableDate);
+    var freeTime = await freeTimeService.GetFreeSlotAsync(catchSlot.Office[0].srvCenterId, catchSlot.time);
+    await freeTimeService.CheckTimeAsync(catchSlot.time, freeTime.StartTime, catchSlot.Office[0].srvCenterId);
+    await bookingSlotService.BookAsync(catchSlot.time, freeTime.StartTime, catchSlot.Office[0].srvCenterId,
+        catchSlot.Office[0]);
+    await bookingSlotService.SubmitUserAsync(catchSlot.time, freeTime.StartTime, catchSlot.Office[0].srvCenterId,
+        catchSlot.Office[0]);
+    await bookingSlotService.ConfirmAsync(catchSlot.Office[0].srvCenterId);
+    // var requestservice = scoped.ServiceProvider.GetRequiredService<CreateRequestService>();
+    // var requestAsync = await requestservice.SendRequestAsync();
+    // var freeSlot = await requestservice.SenderAsync(requestAsync);
+    // var time = await requestservice.FreeTime(freeSlot.Office[0].srvCenterId,freeSlot.time);
+    // await requestservice.CheckTime(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId);
+    // await requestservice.BookTime(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId, freeSlot.Office[0]);
+    // await requestservice.CredentialBook(freeSlot.time, time.StartTime, freeSlot.Office[0].srvCenterId,freeSlot.Office[0]);
+    // await requestservice.Confirm(freeSlot.Office[0].srvCenterId);
+
 }
 
