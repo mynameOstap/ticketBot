@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using TicketBot.Dto;
@@ -16,131 +17,183 @@ public class CreateRequestService
         _client = client;
     }
 
-    public async Task<ApiResponse> SendRequestAsync(Dictionary<string, string> postData)
+    public async Task<DateListDTO> SendRequestAsync()
     {
-        var request = new HttpRequestMessage(HttpMethod.Post, "/site/freetimes")
-        {
-            Content = new FormUrlEncodedContent(postData)
-        };
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://eqn.hsc.gov.ua/api/v2/days?startDate=&endDate=&serviceId=49&departmentId=undefined");
+       
 
         HttpResponseMessage response = await _client.SendAsync(request);
         var strReposonse = await response.Content.ReadAsStringAsync();
         Console.WriteLine(strReposonse);
-        return JsonConvert.DeserializeObject<ApiResponse>(strReposonse)!;
+        var result =  JsonConvert.DeserializeObject<DateListDTO>(strReposonse)!;
+        return result;
 
     }
 
-    public async Task<ApiResponse> SenderAsync()
+    public async Task<(List<ApiResponse> Office, string time)> SenderAsync(DateListDTO dateListDto)
     {
-        DateTime today = DateTime.Today;
-        Random random = new Random();
+      
         try
         {
-            var officeIds = _configuration.GetSection("ApplicationRules:OfficeIds").Get<int[]>();
-            if (officeIds == null || officeIds.Length == 0)
-            {
-                Console.WriteLine("Error: No office IDs found in configuration.");
-                return null;
-            }
-
-            bool freeTime = false; 
-
-            while (!freeTime) 
-            {
-                foreach (int officeId in officeIds) 
+                for (int i = 0; i < dateListDto.Data.Count; i++) 
                 { 
-                    for (int j = 0; j < 10; j++)
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"https://eqn.hsc.gov.ua/api/v2/departments?serviceId=49&date=" +
+                                                                         $"{dateListDto.Data[i].Date.ToString("yyyy-MM-dd")}");
+                    HttpResponseMessage response = await _client.SendAsync(request);
+                    var strReposonse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine(strReposonse);
+                    var centers = JsonConvert.DeserializeObject<List<ApiResponse>>(strReposonse);
+                    var filteredCenters = centers.Where(center => center.srvCenterId == 129 || center.srvCenterId == 74).ToList();
+                    if (filteredCenters.Any())
                     {
-                        DateTime targetDate = today.AddDays(j);
-
-                        var postData = new Dictionary<string, string>
-                        {
-                            { "office_id", officeId.ToString() },
-                            { "date_of_admission", targetDate.ToString("yyyy-MM-dd") },
-                            { "question_id", "55" },
-                            { "id_es", "" }
-                        };
-
-                        await Task.Delay(random.Next(1000,5000)); 
-                        var result = await SendRequestAsync(postData);
-
-                        if (result.Rows.Count > 0) 
-                        {
-                            freeTime = true; 
-                            return result; 
-                        }
+                        
+                        return (filteredCenters,  dateListDto.Data[i].Date.ToString("yyyy-MM-dd"));
                     }
+                    await Task.Delay(1000);
                 }
-            }
+            
         }
+    
         catch (Exception ex)
         {
             Console.WriteLine($"Error in SenderAsync: {ex.Message}");
         }
-
-        return null; 
+    
+        return (new List<ApiResponse>(), string.Empty);
     }
 
-    public async Task<string> GetStep3(string timeId)
+    public async Task<TimeSlots?> FreeTime(int departId, string date)
     {
-        string gmail = _configuration.GetSection("Credentials:gmail").Get<string>();
-        if (gmail == null)
+        try
         {
-            return "Не введений gmail в appsettings";
-        }
-        var postData = new Dictionary<string, string>
-        {
-            { "question_id", "55" },
-            { "id_chtime", timeId},
-            { "email", gmail }
-        };
+            var request = new HttpRequestMessage(HttpMethod.Get, 
+                $"https://eqn.hsc.gov.ua/api/v2/departments/{departId}/services/49/slots?date={date}&page=1&pageSize=24");
+        
+            HttpResponseMessage response = await _client.SendAsync(request);
+            var strResponse = await response.Content.ReadAsStringAsync();
+        
+            var timeSlotResponse = JsonConvert.DeserializeObject<TimeSlotResponseDTO>(strResponse);
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://eq.hsc.gov.ua/site/reservecherga")
-        {
-            Content = new FormUrlEncodedContent(postData)
-        };
-
-        HttpResponseMessage _response = await _client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-
-        if (_response.StatusCode == HttpStatusCode.Found) 
-        {
-            if (_response.Headers.Contains("X-Redirect"))
+            if (timeSlotResponse?.Data != null && timeSlotResponse.Data.Any())
             {
-                
-                if (_response.Headers.TryGetValues("X-Redirect", out IEnumerable<string> redirectHeaders))
-                {
-                    string xRedirectUrl = redirectHeaders.FirstOrDefault();
-                    HttpResponseMessage redirectResponse = await _client.GetAsync(xRedirectUrl);
-                    string responseBody = await redirectResponse.Content.ReadAsStringAsync();
-                    return responseBody; 
-                }
+                Console.WriteLine(timeSlotResponse.Data.Last());
+                return timeSlotResponse.Data.Last(); 
             }
-            else
-            {
-                Console.WriteLine("x-redirect header is missing.");
-            }
-          
+
+            return null; 
         }
-
-        return null;
-
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in FreeSlots: {ex.Message}");
+            return null;
+        }
     }
 
-    public async Task<string> GetTicket(string csrf, string value)
+    public async Task<string> CheckTime(string date, string time, int departId)
     {
-        var postData = new Dictionary<string, string>()
+        var postData = new SlotRequest()
         {
-            { "_csrf", csrf },
-            { "value", value }
+            Date = $"{date}T{time}",      
+            ServiceId = 49,
+            ServiceCenterId = departId   
         };
-        var request = new HttpRequestMessage(HttpMethod.Post, "/site/finish")
+
+        var json = JsonConvert.SerializeObject(postData);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"https://eqn.hsc.gov.ua/api/v2/departments/{departId}/services/49/check")
         {
-            Content = new FormUrlEncodedContent(postData)
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
+
+        HttpResponseMessage responseMessage = await _client.SendAsync(request);
+        return await responseMessage.Content.ReadAsStringAsync();
+    }
+    public async Task<string> BookTime(string date, string time, int departId, ApiResponse apiResponse)
+    {
+        var postData = new BookDTO()
+        {
+            Date = $"{date}T{time}",
+            ServiceId = 49,
+            ServiceCenterId = departId,
+            Configs = new Config()
+            {
+                 
+                    Tab = 4,
+                    Time = time,
+                    Department = apiResponse,
+                    Services = new Dto.Service()
+                    {
+
+                        GroupId = 7,
+                        Id = 49,
+                        Title = "категорія В (механічна КПП)"
+                        
+                    }
+
+            }
+            
+        };
+
+        var json = JsonConvert.SerializeObject(postData);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, $"https://eqn.hsc.gov.ua/api/v2/departments/{departId}/services/49/book")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
         HttpResponseMessage responseMessage = await _client.SendAsync(request);
         return await responseMessage.Content.ReadAsStringAsync();
     }
 
+    public async Task<string> CredentialBook(string date, string time,int departId,ApiResponse apiResponse)
+    {
+        var postData = new Credential()
+        {
+            Name = "",
+            Email = "",
+            Phone = "",
+            Configs = new Config()
+            {
+                
 
+                    Date = $"{date}T{time}",
+                    Tab = 5,
+                    Time = time,
+                    Department = apiResponse,
+                    Services = new Dto.Service()
+                    {
+                        
+                        GroupId = 7,
+                        Id = 49,
+                        Title = "категорія В (механічна КПП)"
+                        
+                    }
+                }
+
+            
+        };
+        
+        
+
+        var json = JsonConvert.SerializeObject(postData);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"https://eqn.hsc.gov.ua/api/v2/departments/{departId}/services/49/book")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
+        HttpResponseMessage responseMessage = await _client.SendAsync(request);
+        return await responseMessage.Content.ReadAsStringAsync();
+    }
+    public async Task<string> Confirm(int departId)
+    {
+        
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            $"https://eqn.hsc.gov.ua/api/v2/departments/{departId}/services/49/book/confirm");
+        
+        HttpResponseMessage responseMessage = await _client.SendAsync(request);
+        return await responseMessage.Content.ReadAsStringAsync();
+    }
+    
 }
 

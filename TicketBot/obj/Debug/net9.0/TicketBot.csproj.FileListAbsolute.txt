@@ -53,3 +53,4 @@ C:\Users\Gremblya\RiderProjects\TicketBot\TicketBot\bin\Debug\net9.0\MailKit.dll
 C:\Users\Gremblya\RiderProjects\TicketBot\TicketBot\bin\Debug\net9.0\MimeKit.dll
 C:\Users\Gremblya\RiderProjects\TicketBot\TicketBot\bin\Debug\net9.0\System.Security.Cryptography.Pkcs.dll
 C:\Users\Gremblya\RiderProjects\TicketBot\TicketBot\bin\Debug\net9.0\runtimes\win\lib\net8.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\Gremblya\RiderProjects\TicketBot\TicketBot\obj\Debug\net9.0\TicketBot.sourcelink.json
