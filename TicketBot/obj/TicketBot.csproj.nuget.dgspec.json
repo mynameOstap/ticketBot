@@ -1,20 +1,21 @@
 {
   "format": 1,
   "restore": {
-    "/home/ostap/RiderProjects/ticketBot/TicketBot/TicketBot.csproj": {}
+    "C:\\Users\\Gremblya\\RiderProjects\\TicketBot\\TicketBot\\TicketBot.csproj": {}
   },
   "projects": {
-    "/home/ostap/RiderProjects/ticketBot/TicketBot/TicketBot.csproj": {
+    "C:\\Users\\Gremblya\\RiderProjects\\TicketBot\\TicketBot\\TicketBot.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/ostap/RiderProjects/ticketBot/TicketBot/TicketBot.csproj",
+        "projectUniqueName": "C:\\Users\\Gremblya\\RiderProjects\\TicketBot\\TicketBot\\TicketBot.csproj",
         "projectName": "TicketBot",
-        "projectPath": "/home/ostap/RiderProjects/ticketBot/TicketBot/TicketBot.csproj",
-        "packagesPath": "/home/ostap/.nuget/packages/",
-        "outputPath": "/home/ostap/RiderProjects/ticketBot/TicketBot/obj/",
+        "projectPath": "C:\\Users\\Gremblya\\RiderProjects\\TicketBot\\TicketBot\\TicketBot.csproj",
+        "packagesPath": "C:\\Users\\Gremblya\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Gremblya\\RiderProjects\\TicketBot\\TicketBot\\obj\\",
         "projectStyle": "PackageReference",
+        "UsingMicrosoftNETSdk": false,
         "configFilePaths": [
-          "/home/ostap/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Gremblya\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
@@ -37,8 +38,7 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "all"
-        },
-        "SdkAnalysisLevel": "9.0.100"
+        }
       },
       "frameworks": {
         "net9.0": {
@@ -89,7 +89,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/home/ostap/.dotnet/sdk/9.0.100/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

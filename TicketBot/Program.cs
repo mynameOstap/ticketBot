@@ -35,6 +35,7 @@ builder.Services.AddScoped<EmailSenderService>();
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
+    var credentials = configuration.GetSection("Credentials").Get<CredentialsConfig>();
     var availableDateService = scope.ServiceProvider.GetRequiredService<IAvailableDate>();
     var bookingSlotService = scope.ServiceProvider.GetRequiredService<IBookingSlot>();
     var catchSlotService = scope.ServiceProvider.GetRequiredService<ICatchSlot>();
@@ -52,6 +53,7 @@ using (var scope = app.Services.CreateScope())
     await bookingSlotService.SubmitUserAsync(catchSlot.time, freeTime.StartTime, catchSlot.Office[0].srvCenterId,
         catchSlot.Office[0]);
     await bookingSlotService.ConfirmAsync(catchSlot.Office[0].srvCenterId);
+    await emailSenderService.SenderEmailAsync(credentials.Gmail, freeTime.StartTime);
     // var requestservice = scoped.ServiceProvider.GetRequiredService<CreateRequestService>();
     // var requestAsync = await requestservice.SendRequestAsync();
     // var freeSlot = await requestservice.SenderAsync(requestAsync);
@@ -62,4 +64,3 @@ using (var scope = app.Services.CreateScope())
     // await requestservice.Confirm(freeSlot.Office[0].srvCenterId);
 
 }
-

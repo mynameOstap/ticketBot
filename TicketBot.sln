@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TicketBot", "TicketBot\TicketBot.csproj", "{C7CC0C3A-A3EA-47C9-AF89-62FA50789478}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BotControllerApi", "BotControllerApi\BotControllerApi.csproj", "{93E1B062-0990-449C-9F7F-F70F5686C00E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{C7CC0C3A-A3EA-47C9-AF89-62FA50789478}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7CC0C3A-A3EA-47C9-AF89-62FA50789478}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7CC0C3A-A3EA-47C9-AF89-62FA50789478}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93E1B062-0990-449C-9F7F-F70F5686C00E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93E1B062-0990-449C-9F7F-F70F5686C00E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93E1B062-0990-449C-9F7F-F70F5686C00E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93E1B062-0990-449C-9F7F-F70F5686C00E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

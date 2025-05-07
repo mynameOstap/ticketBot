@@ -1,0 +1,11 @@
+@BotControllerApi_HostAddress = http://localhost:3000
+
+GET {{BotControllerApi_HostAddress}}/todos/
+Accept: application/json
+
+###
+
+GET {{BotControllerApi_HostAddress}}/todos/1
+Accept: application/json
+
+###
